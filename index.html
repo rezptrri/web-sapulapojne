@@ -265,7 +265,7 @@
   .hero-banner::after{
     content:'';
     position:absolute; inset:0;
-    /* Foto perlahan memudar ke warna cream seperti referensi */
+  
     background:
       linear-gradient(
         180deg,
@@ -646,7 +646,7 @@
   }
   .onboard-close:hover{ color:var(--ink); }
 
-  /* ---------- LIGHTBOX (buka foto/video ukuran penuh) ---------- */
+  /* ---------- LIGHTBOX ---------- */
   #lightboxModal{
     position:fixed; inset:0; z-index:60;
     display:none;
@@ -828,7 +828,7 @@
   }
   .letter-time{ font-size:0.7rem; color:var(--ink-soft); }
 
-  /* ---------- musik di dalam website (HTML5 audio, full song dari file kamu) ---------- */
+  /* ---------- musik di dalam website (HTML5 audio, full song dari file) ---------- */
   /* default: bubble kecil di pojok kanan bawah, gak melebar/nutup tengah layar pas scroll */
   #musicBar{
     display:none;
@@ -1105,7 +1105,7 @@
     }
     .onboard-submit-btn{ padding:14px; font-size:0.92rem; min-height:48px; }
 
-    /* Lightbox mobile: gaya Instagram — foto full lebar, scroll ke bawah buat caption/komen */
+    /* Lightbox mobile*/
     #lightboxModal{
       padding:0;
       align-items:stretch;
@@ -1223,11 +1223,7 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-  // ========================================================================
-  // GANTI DUA BARIS DI BAWAH INI dengan Project URL & anon public key
-  // dari Supabase kamu (Settings -> API di dashboard Supabase).
-  // Panduan lengkap ada di file SETUP.md yang dikirim bareng file ini.
-  // ========================================================================
+  
   window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
   window.SUPABASE_ANON_KEY = "sb_publishable_S2BYuyE3pHyE7bLPCYJ0aQ_gVL0fdW9";
 </script>
@@ -1342,7 +1338,7 @@
   </footer>
 </div>
 
-<!-- ============ MUSIK: player di dalam website (full song dari file audio kamu) ============ -->
+<!-- ============ MUSIK ============ -->
 <div id="musicBar">
   <div class="music-bar-inner">
     <button class="music-play-toggle" id="musicPlayToggle" title="Play/Pause">▶</button>
@@ -1462,7 +1458,6 @@
 <script>
   // ==========================================================================
   // Koneksi ke Supabase (database + storage foto/video bersama).
-  // Kalau SUPABASE_URL/SUPABASE_ANON_KEY di <head> belum diganti, kasih tau di sini.
   // ==========================================================================
   const sb = (window.SUPABASE_URL && window.SUPABASE_URL !== "GANTI_DENGAN_SUPABASE_PROJECT_URL")
     ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
@@ -1492,8 +1487,7 @@
 
   // ---------- daftar anggota & password (nama sendiri jadi password & username) ----------
   // biodata masing-masing (foto, julukan, ultah, hobi, quote) diisi sendiri oleh tiap anggota
-  // pas pertama kali mereka login -> tersimpan permanen di Supabase, gak perlu isi ulang lagi,
-  // dan keliatan sama di device manapun.
+  // pas pertama kali mereka login -> tersimpan permanen di Supabase
   const MEMBERS = [
     { name: "Saira",   color: "#8fa888" },
     { name: "April",   color: "#c98a91" },
@@ -1542,8 +1536,6 @@
   }
 
   // ---------- musik di dalam website (HTML5 audio, full song) ----------
-  // ISI LINK FILE AUDIO DI SINI (mp3/m4a yang kamu upload ke Supabase Storage / Google Drive / dll)
-  // Contoh: setelah upload ke bucket 'media', tempel public URL-nya di bawah.
   const MUSIC_URL = "https://yatmsttajhpdzmhcqyup.supabase.co/storage/v1/object/public/media/Bebas.mp3"; // <-- tempel link file lagu di sini
 
   const musicBar = document.getElementById('musicBar');
