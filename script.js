@@ -2,6 +2,11 @@
 window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
   window.SUPABASE_ANON_KEY = "sb_publishable_S2BYuyE3pHyE7bLPCYJ0aQ_gVL0fdW9";
 
+  // VAPID PUBLIC key saja (AMAN di frontend). Private key HANYA di Supabase Edge Function secrets.
+  // Generate: npx web-push generate-vapid-keys
+  // Lalu tempel public key di sini + set private di Supabase secrets.
+  window.VAPID_PUBLIC_KEY = "BJqyf8zPfT8dgZ7roGN3MIwk2dg6j98jxw42G_03nE7Jk3wDF4M3IwMivHqsUOGywf6ujsh8vpuSKM-W9NAcQgw";
+
 // ==========================================================================
   // Koneksi ke Supabase (database + storage foto/video bersama).
   // ==========================================================================
@@ -17,23 +22,25 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
     return false;
   }
 
-  // ---------- safe storage (hindari crash kalau sessionStorage diblokir / sandbox) ----------
+  // ---------- safe storage (localStorage = tetap login seperti app sosmed) ----------
+  // Login disimpan permanen di device sampai user klik Logout / clear data browser.
+  // Cocok untuk grup kecil (6 orang) yang sering buka-buka lagi.
   const _memStore = {};
   const safeStorage = {
     get(key){
-      try{ return sessionStorage.getItem(key); }catch(e){ return _memStore[key] || null; }
+      try{ return localStorage.getItem(key); }catch(e){ return _memStore[key] || null; }
     },
     set(key, val){
-      try{ sessionStorage.setItem(key, val); }catch(e){ _memStore[key] = val; }
+      try{ localStorage.setItem(key, val); }catch(e){ _memStore[key] = val; }
     },
     remove(key){
-      try{ sessionStorage.removeItem(key); }catch(e){ delete _memStore[key]; }
+      try{ localStorage.removeItem(key); }catch(e){ delete _memStore[key]; }
     }
   };
 
-  // ---------- daftar anggota & password (nama sendiri jadi password & username) ----------
+  // ---------- daftar anggota (username tetap nama; password dibuat sendiri) ----------
   // biodata masing-masing (foto, julukan, ultah, hobi, quote) diisi sendiri oleh tiap anggota
-  // pas pertama kali mereka login -> tersimpan permanen di Supabase
+  // pas pertama kali mereka login -> set password + biodata, tersimpan di Supabase
   const MEMBERS = [
     { name: "Saira",   color: "#8fa888" },
     { name: "April",   color: "#c98a91" },
@@ -43,24 +50,370 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
     { name: "Neva",    color: "#6f9b8a" }
   ];
 
+  const userInput = document.getElementById('userInput');
   const pwInput   = document.getElementById('pwInput');
+  const pwConfirmInput = document.getElementById('pwConfirmInput');
+  const pwConfirmWrap  = document.getElementById('pwConfirmWrap');
   const unlockBtn = document.getElementById('unlockBtn');
   const errorMsg  = document.getElementById('errorMsg');
   const lockCard  = document.getElementById('lockCard');
   const lockScreen = document.getElementById('lockScreen');
   const dashboard   = document.getElementById('dashboard');
 
-  function tryUnlock(){
+
+  // ==========================================================================
+  // Web Push Notifications (aman: private key tidak pernah di browser)
+  // ==========================================================================
+  const ALLOWED_MEMBERS = MEMBERS.map(m => m.name);
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  function notifSupported() {
+    return (
+      typeof window !== 'undefined' &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window &&
+      'Notification' in window
+    );
+  }
+
+  async function registerServiceWorker() {
+    if (!notifSupported()) return null;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+      return reg;
+    } catch (err) {
+      console.warn('SW register gagal', err);
+      return null;
+    }
+  }
+
+  async function savePushSubscription(userName, subscription) {
+    if (!sb || !subscription) return false;
+    if (!ALLOWED_MEMBERS.includes(userName)) return false;
+
+    const json = subscription.toJSON();
+    const endpoint = json.endpoint;
+    const p256dh = json.keys && json.keys.p256dh;
+    const auth = json.keys && json.keys.auth;
+    if (!endpoint || !p256dh || !auth) return false;
+
+    // Upsert by endpoint (unique)
+    const { error } = await sb.from('push_subscriptions').upsert(
+      {
+        user_name: userName,
+        endpoint,
+        p256dh,
+        auth,
+        user_agent: (navigator.userAgent || '').slice(0, 240)
+      },
+      { onConflict: 'endpoint' }
+    );
+    if (error) {
+      console.warn('Gagal simpan subscription', error);
+      return false;
+    }
+    try { localStorage.setItem('sapulapojne_push_ok', '1'); } catch (_) {}
+    return true;
+  }
+
+  async function removePushSubscription(subscription) {
+    if (!sb || !subscription) return;
+    try {
+      const endpoint = subscription.endpoint || (subscription.toJSON && subscription.toJSON().endpoint);
+      if (endpoint) {
+        await sb.from('push_subscriptions').delete().eq('endpoint', endpoint);
+      }
+      await subscription.unsubscribe();
+    } catch (e) {
+      console.warn('unsubscribe error', e);
+    }
+    try { localStorage.removeItem('sapulapojne_push_ok'); } catch (_) {}
+  }
+
+  async function enablePushNotifications(userName) {
+    if (!notifSupported()) {
+      alert('Browser kamu belum mendukung notifikasi push. Coba Chrome/Edge/Firefox di Android, atau Safari setelah "Add to Home Screen" di iPhone.');
+      return false;
+    }
+    if (!window.VAPID_PUBLIC_KEY || window.VAPID_PUBLIC_KEY.startsWith('GANTI_')) {
+      alert('VAPID public key belum diisi. Lihat SETUP_NOTIF.md dulu ya.');
+      return false;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert('Izin notifikasi ditolak. Kalau berubah pikiran, aktifkan dari pengaturan browser/situs.');
+      return false;
+    }
+
+    const reg = await registerServiceWorker();
+    if (!reg) {
+      alert('Gagal mendaftarkan service worker.');
+      return false;
+    }
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(window.VAPID_PUBLIC_KEY)
+      });
+    }
+
+    const ok = await savePushSubscription(userName, sub);
+    if (!ok) {
+      alert('Gagal menyimpan subscription. Coba lagi nanti.');
+      return false;
+    }
+    return true;
+  }
+
+  function hideNotifBanner() {
+    const el = document.getElementById('notifBanner');
+    if (el) el.classList.remove('show');
+  }
+
+  function showNotifBanner() {
+    const el = document.getElementById('notifBanner');
+    if (el) el.classList.add('show');
+  }
+
+  function shouldPromptNotif() {
+    if (!notifSupported()) return false;
+    if (Notification.permission === 'granted') {
+      // sudah izinkan — pastikan subscription masih tersimpan
+      return false;
+    }
+    if (Notification.permission === 'denied') return false;
+    try {
+      if (localStorage.getItem('sapulapojne_push_dismiss') === '1') return false;
+    } catch (_) {}
+    return true;
+  }
+
+  async function ensurePushAfterLogin(userName) {
+    if (!notifSupported()) return;
+
+    // Daftarkan SW diam-diam (butuh untuk receive push)
+    const reg = await registerServiceWorker();
+
+    if (Notification.permission === 'granted' && reg) {
+      // Re-sync subscription ke server (device bisa ganti endpoint)
+      try {
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub && window.VAPID_PUBLIC_KEY && !window.VAPID_PUBLIC_KEY.startsWith('GANTI_')) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(window.VAPID_PUBLIC_KEY)
+          });
+        }
+        if (sub) await savePushSubscription(userName, sub);
+      } catch (e) {
+        console.warn('resync push failed', e);
+      }
+      return;
+    }
+
+    if (shouldPromptNotif()) {
+      // tampilkan banner setelah sedikit delay biar dashboard keburu render
+      setTimeout(showNotifBanner, 900);
+    }
+  }
+
+  function setupNotifBannerHandlers() {
+    const enableBtn = document.getElementById('notifEnableBtn');
+    const laterBtn = document.getElementById('notifLaterBtn');
+    if (enableBtn) {
+      enableBtn.addEventListener('click', async () => {
+        const user = safeStorage.get('sapulapojne_user');
+        if (!user) return;
+        enableBtn.disabled = true;
+        enableBtn.textContent = '...';
+        const ok = await enablePushNotifications(user);
+        enableBtn.disabled = false;
+        enableBtn.textContent = 'Aktifkan';
+        if (ok) {
+          hideNotifBanner();
+          enableBtn.textContent = 'Aktif ✓';
+        }
+      });
+    }
+    if (laterBtn) {
+      laterBtn.addEventListener('click', () => {
+        try { localStorage.setItem('sapulapojne_push_dismiss', '1'); } catch (_) {}
+        hideNotifBanner();
+      });
+    }
+  }
+
+
+  // ---------- password hashing (Web Crypto PBKDF2) — plain password TIDAK disimpan ----------
+  function bufToB64(buf) {
+    const bytes = new Uint8Array(buf);
+    let s = '';
+    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s);
+  }
+  function b64ToBuf(b64) {
+    const s = atob(b64);
+    const bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
+    return bytes.buffer;
+  }
+  async function hashPassword(password, saltB64) {
+    const enc = new TextEncoder();
+    const salt = b64ToBuf(saltB64);
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' },
+      keyMaterial,
+      256
+    );
+    return bufToB64(bits);
+  }
+  function randomSaltB64() {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    return bufToB64(salt);
+  }
+
+  async function getAuthRow(name) {
+    // Ambil hanya kolom auth; kalau kolom belum ada di DB, error ditangani caller
+    const { data, error } = await sb
+      .from('profiles')
+      .select('name, password_hash, password_salt')
+      .eq('name', name)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  async function savePassword(name, password) {
+    const salt = randomSaltB64();
+    const hash = await hashPassword(password, salt);
+    // upsert name + hash; jangan timpa biodata lain kalau sudah ada
+    const existing = await getProfile(name);
+    const row = {
+      name,
+      password_hash: hash,
+      password_salt: salt
+    };
+    if (!existing) {
+      // baris baru minimal
+      row.nama_lengkap = name;
+    }
+    const { error } = await sb.from('profiles').upsert(row, { onConflict: 'name' });
+    if (error) throw error;
+  }
+
+  function shakeLock(msg) {
+    errorMsg.textContent = msg;
+    lockCard.classList.remove('shake');
+    void lockCard.offsetWidth;
+    lockCard.classList.add('shake');
+  }
+
+  // Cek apakah username sudah punya password → tampilkan/hide confirm field
+  async function refreshPasswordMode() {
+    if (!pwConfirmWrap) return;
+    const name = (userInput && userInput.value) || '';
+    if (!name || !sb) {
+      pwConfirmWrap.hidden = true;
+      return;
+    }
+    try {
+      const row = await getAuthRow(name);
+      const hasPw = !!(row && row.password_hash && row.password_salt);
+      pwConfirmWrap.hidden = hasPw;
+      if (hasPw && pwConfirmInput) pwConfirmInput.value = '';
+    } catch (e) {
+      // Kalau kolom password belum ada di DB, anggap belum set
+      pwConfirmWrap.hidden = false;
+      console.warn('auth check', e);
+    }
+  }
+  if (userInput) {
+    userInput.addEventListener('change', refreshPasswordMode);
+  }
+
+  async function tryUnlock(){
     if(needsSupabaseSetup()) return;
-    const val = pwInput.value.trim().toLowerCase();
-    const match = MEMBERS.find(m => m.name.toLowerCase() === val);
-    if(match){
-      enterDashboard(match.name);
-    } else {
-      errorMsg.textContent = "Hmm, kata kuncinya belum pas. Coba lagi ya ✨";
-      lockCard.classList.remove('shake');
-      void lockCard.offsetWidth;
-      lockCard.classList.add('shake');
+    const name = (userInput && userInput.value) ? userInput.value.trim() : '';
+    const password = (pwInput.value || '').trim();
+    const confirm = pwConfirmInput ? (pwConfirmInput.value || '').trim() : '';
+
+    if (!name) {
+      shakeLock('Pilih nama dulu ya.');
+      return;
+    }
+    const match = MEMBERS.find(m => m.name === name);
+    if (!match) {
+      shakeLock('Nama ini bukan anggota sapulapojne.');
+      return;
+    }
+    if (!password || password.length < 4) {
+      shakeLock('Password minimal 4 karakter ya.');
+      return;
+    }
+
+    unlockBtn.disabled = true;
+    const prevLabel = unlockBtn.textContent;
+    unlockBtn.textContent = 'Sebentar...';
+    errorMsg.textContent = '';
+
+    try {
+      let row = null;
+      try {
+        row = await getAuthRow(name);
+      } catch (e) {
+        console.error(e);
+        shakeLock('Gagal cek akun. Pastikan kolom password sudah ditambah di Supabase (lihat SETUP_AUTH.md).');
+        return;
+      }
+
+      const hasPw = !!(row && row.password_hash && row.password_salt);
+
+      if (!hasPw) {
+        // Registrasi password pertama kali untuk nama ini
+        if (pwConfirmWrap) pwConfirmWrap.hidden = false;
+        if (!confirm) {
+          shakeLock('Pertama kali masuk: isi password + ulangi password.');
+          return;
+        }
+        if (password !== confirm) {
+          shakeLock('Password dan ulangan tidak sama.');
+          return;
+        }
+        await savePassword(name, password);
+        enterDashboard(name);
+        return;
+      }
+
+      // Login biasa
+      const hash = await hashPassword(password, row.password_salt);
+      if (hash !== row.password_hash) {
+        shakeLock('Password salah. Coba lagi ya ✨');
+        return;
+      }
+      enterDashboard(name);
+    } catch (err) {
+      console.error(err);
+      shakeLock('Gagal masuk. Coba lagi.');
+    } finally {
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = prevLabel;
     }
   }
 
@@ -73,6 +426,9 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
     loadGallery();
     loadLetters();
     loadMembersGrid();
+
+    // Push notif: register SW + minta izin kalau belum
+    ensurePushAfterLogin(name);
 
     // cek apakah anggota ini udah pernah isi biodata sendiri. kalau belum, minta isi dulu (sekali doang).
     const existingProfile = await getProfile(name);
@@ -319,7 +675,7 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
       onboardPhotoPreview.innerHTML = existingProfile.photo_url ? `<img src="${existingProfile.photo_url}">` : '😊';
     } else {
       onboardTitle.innerHTML = `Yeay, halo <span id="onboardName">${name}</span> ✨`;
-      onboardSub.textContent = 'Ini pertama kalinya kamu masuk, jadi lengkapi dulu biodatamu ya. Cukup sekali aja kok — abis ini kamu tinggal masukin kata kunci lagi, di device manapun, gak perlu isi ulang.';
+      onboardSub.textContent = 'Ini pertama kalinya kamu masuk, jadi lengkapi dulu biodatamu ya. Cukup sekali aja kok — abis ini di device yang sama kamu langsung masuk tanpa isi password lagi.';
       onboardPhotoPreview.innerHTML = '😊';
     }
     onboardStatus.textContent = '';
@@ -818,6 +1174,9 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
 
   unlockBtn.addEventListener('click', tryUnlock);
   pwInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryUnlock(); });
+  if (pwConfirmInput) {
+    pwConfirmInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryUnlock(); });
+  }
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
     safeStorage.remove('sapulapojne_user');
@@ -829,6 +1188,8 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
   });
 
   window.addEventListener('DOMContentLoaded', () => {
+    setupNotifBannerHandlers();
+
     if(!sb){
       errorMsg.textContent = 'Supabase belum disambungkan. Lihat SETUP.md.';
     } else {
