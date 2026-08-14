@@ -47,8 +47,7 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
     { name: "Putri",   color: "#d9a373" },
     { name: "Lala",    color: "#a98cb0" },
     { name: "Fauziah", color: "#c9a34e" },
-    { name: "Neva",    color: "#6f9b8a" },
-    { name: "TestUser", color: "#999999" }
+    { name: "Neva",    color: "#6f9b8a" }
   ];
 
   const userInput = document.getElementById('userInput');
