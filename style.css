@@ -94,7 +94,7 @@
     margin-bottom:8px;
     letter-spacing:0.02em;
   }
-  #pwInput{
+  #pwInput, #pwConfirmInput, .lock-select{
     width:100%;
     padding:14px 16px;
     border-radius:14px;
@@ -106,9 +106,34 @@
     outline:none;
     transition:border-color .2s, box-shadow .2s;
   }
-  #pwInput:focus{
+  .lock-select{
+    cursor:pointer;
+    appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7864' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    padding-right:36px;
+  }
+  #pwInput:focus, #pwConfirmInput:focus, .lock-select:focus{
     border-color:var(--sage);
-    box-shadow:0 0 0 4px rgba(143,168,136,0.18);
+    box-shadow:0 0 0 3px rgba(143,168,136,0.25);
+  }
+  .pw-confirm-wrap{
+    margin-top:4px;
+    margin-bottom:4px;
+  }
+  .hint-inline{
+    margin:6px 0 0;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    line-height:1.35;
+  }
+  .field-label{
+    display:block;
+    margin-top:12px;
+  }
+  .field-label:first-of-type{
+    margin-top:0;
   }
   .unlock-btn{
     margin-top:18px;
@@ -1210,4 +1235,86 @@
     section{ padding:24px 12px 36px; }
     .section-head h2{ font-size:1.25rem; }
     .lightbox-media img, .lightbox-media video{ max-height:72vh; }
+  }
+
+  /* ---------- push notification banner ---------- */
+  #notifBanner{
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%) translateY(120%);
+    z-index: 9999;
+    max-width: min(420px, calc(100vw - 24px));
+    width: 100%;
+    background: var(--white);
+    border: 1px solid var(--sage-light);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.35s cubic-bezier(.2,.8,.2,1), opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #notifBanner.show{
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #notifBanner .notif-icon{
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  #notifBanner .notif-text{
+    flex: 1;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  #notifBanner .notif-text strong{
+    display: block;
+    font-size: 0.88rem;
+    color: var(--sage-deep);
+    margin-bottom: 2px;
+  }
+  #notifBanner .notif-actions{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  #notifBanner .notif-enable{
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #notifBanner .notif-enable:hover{ background: var(--ink); }
+  #notifBanner .notif-enable:disabled{ opacity: 0.6; cursor: not-allowed; }
+  #notifBanner .notif-later{
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+  #notifBanner .notif-later:hover{ color: var(--ink); }
+
+  @media (max-width: 480px){
+    #notifBanner{
+      bottom: 12px;
+      padding: 12px;
+      border-radius: 14px;
+    }
+    #notifBanner .notif-actions{ flex-direction: row; align-items: center; }
   }
