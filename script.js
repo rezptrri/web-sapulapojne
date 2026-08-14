@@ -5,7 +5,7 @@ window.SUPABASE_URL = "https://yatmsttajhpdzmhcqyup.supabase.co";
   // VAPID PUBLIC key saja (AMAN di frontend). Private key HANYA di Supabase Edge Function secrets.
   // Generate: npx web-push generate-vapid-keys
   // Lalu tempel public key di sini + set private di Supabase secrets.
-  window.VAPID_PUBLIC_KEY = "BJqyf8zPfT8dgZ7roGN3MIwk2dg6j98jxw42G_03nE7Jk3wDF4M3IwMivHqsUOGywf6ujsh8vpuSKM-W9NAcQgw";
+  window.VAPID_PUBLIC_KEY = "BG6mnIGJaJnf1_YpCy6SZd4v4mxmXHbD4ptVRaWQWcHa6sRt_K4hOP5EQhh85ZqJ1vMVq5vcEbKvmPR7iuPjUqg";
 
 // ==========================================================================
   // Koneksi ke Supabase (database + storage foto/video bersama).
