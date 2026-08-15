@@ -47,7 +47,7 @@
           <div class="sp-wheel-center"></div>
         </div>
         <p class="sp-result-label">Giliran</p>
-        <p class="sp-result-name" id="sp-name">nungguin yeak?</p>
+        <p class="sp-result-name" id="sp-name">siapa yeahh?</p>
         <button class="sp-btn" id="sp-spin">Putar</button>
       </div>
     `;
