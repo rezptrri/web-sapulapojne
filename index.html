@@ -13,8 +13,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="spinner.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
 </head>
 <body>
 
@@ -110,13 +110,16 @@
   </section>
 
   <section id="membersSection" class="page-section">
-    <div class="section-head">
-      <span class="section-emoji">👥</span>
-      <h2>Biodata anggota</h2>
-      <span>· 6 orang</span>
-    </div>
-    <div class="members" id="membersGrid"></div>
-  </section>
+  <div class="section-head">
+    <span class="section-emoji">👥</span>
+    <h2>Biodata anggota</h2>
+    <span>· 6 orang</span>
+  </div>
+
+  <div id="spinner"></div>
+
+  <div class="members" id="membersGrid"></div>
+</section>
 
   <section id="lettersSection" class="page-section">
     <div class="section-head">
@@ -276,6 +279,7 @@
 </div>
 
 <script src="script.js"></script>
+<script src="spinner.js"></script>
 
 </body>
 </html>
