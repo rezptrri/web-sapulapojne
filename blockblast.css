@@ -1,0 +1,184 @@
+/* ===== Block Blast — sapulapojne ===== */
+
+:root {
+  --bb-bg: #f4f1ea;
+  --bb-card: #ffffff;
+  --bb-border: #e2ddd0;
+  --bb-text: #3d3a34;
+  --bb-text-muted: #8a857a;
+  --bb-accent: #8fa888; /* sage, senada sama tema web utama */
+
+  /* warna per member — dipake buat badge nama & baris leaderboard */
+  --bb-neva: #e88fae;      /* pink */
+  --bb-fauziah: #9cb98a;   /* green tea */
+  --bb-putri: #cdb8e8;     /* pastel lilac */
+  --bb-lala: #9a9891;      /* abu-abu */
+  --bb-april: #33415c;     /* navy */
+  --bb-saira: #7b2d3b;     /* burgundy */
+}
+
+.bb-wrap {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 16px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--bb-text);
+}
+
+.bb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.bb-score-label {
+  font-size: 12px;
+  color: var(--bb-text-muted);
+  margin: 0;
+}
+
+.bb-score-value {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.bb-btn {
+  background: var(--bb-card);
+  border: 1px solid var(--bb-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--bb-text);
+}
+.bb-btn:hover { background: #faf8f3; }
+.bb-btn:active { transform: scale(0.97); }
+
+.bb-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  max-width: 320px;
+  margin: 0 auto 16px;
+  background: var(--bb-card);
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--bb-border);
+}
+
+.bb-cell {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: #eee9dd;
+  border: 1px solid #e2ddd0;
+  transition: background 0.12s ease;
+}
+
+.bb-cell.bb-filled {
+  border: none;
+}
+
+.bb-message {
+  text-align: center;
+  font-size: 13px;
+  min-height: 18px;
+  margin-bottom: 8px;
+  color: var(--bb-saira);
+}
+
+.bb-tray {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.bb-piece {
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--bb-border);
+  background: var(--bb-card);
+  min-width: 64px;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.bb-piece.bb-selected {
+  border: 2px solid var(--bb-accent);
+}
+
+.bb-piece.bb-empty {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.bb-piece-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.bb-piece-cell {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+}
+
+/* ===== Leaderboard ===== */
+
+.bb-leaderboard {
+  background: var(--bb-card);
+  border: 1px solid var(--bb-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.bb-leaderboard h3 {
+  font-size: 14px;
+  margin: 0 0 10px;
+  color: var(--bb-text);
+}
+
+.bb-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f0ece2;
+}
+.bb-lb-row:last-child { border-bottom: none; }
+
+.bb-lb-rank {
+  width: 18px;
+  font-size: 12px;
+  color: var(--bb-text-muted);
+  text-align: center;
+}
+
+.bb-lb-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bb-lb-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.bb-lb-score {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bb-lb-empty {
+  font-size: 13px;
+  color: var(--bb-text-muted);
+  text-align: center;
+  padding: 8px 0;
+}
