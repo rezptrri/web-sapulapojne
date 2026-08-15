@@ -77,10 +77,11 @@
   </div>
 
   <nav class="section-tabs" id="sectionTabs">
-    <button class="tab-btn active" data-target="gallerySection"><span class="tab-ico">📸</span><span class="tab-txt-full">Galeri kita</span><span class="tab-txt-short">Galeri</span></button>
-    <button class="tab-btn" data-target="membersSection"><span class="tab-ico">👥</span><span class="tab-txt-full">Biodata anggota</span><span class="tab-txt-short">Biodata</span></button>
-    <button class="tab-btn" data-target="lettersSection"><span class="tab-ico">💌</span><span class="tab-txt-full">Surat untuk kita</span><span class="tab-txt-short">Surat</span></button>
-  </nav>
+  <button class="tab-btn active" data-target="gallerySection"><span class="tab-ico">📸</span><span class="tab-txt-full">Galeri kita</span><span class="tab-txt-short">Galeri</span></button>
+  <button class="tab-btn" data-target="membersSection"><span class="tab-ico">👥</span><span class="tab-txt-full">Biodata anggota</span><span class="tab-txt-short">Biodata</span></button>
+  <button class="tab-btn" data-target="lettersSection"><span class="tab-ico">💌</span><span class="tab-txt-full">Surat untuk kita</span><span class="tab-txt-short">Surat</span></button>
+  <button class="tab-btn" data-target="gamesSection"><span class="tab-ico">🎮</span><span class="tab-txt-full">Game kecil</span><span class="tab-txt-short">Game</span></button>
+</nav>
 
   <section id="gallerySection" class="page-section active">
     <div class="section-head">
@@ -116,7 +117,7 @@
     <span>· 6 orang</span>
   </div>
 
-  <div id="spinner"></div>
+  
 
   <div class="members" id="membersGrid"></div>
 </section>
@@ -140,6 +141,23 @@
       <div class="empty-state"><span class="spinner"></span> Memuat surat...</div>
     </div>
   </section>
+
+    <section id="gamesSection" class="page-section">
+  <div class="section-head">
+    <span class="section-emoji">🎮</span>
+    <h2>Game kecil</h2>
+    <span>· main bareng, iseng-iseng aja</span>
+  </div>
+
+  <!-- Game 1: Spinner giliran -->
+  <div class="game-card">
+    <h3 class="game-title">🎡 Spinner giliran</h3>
+    <p class="game-desc">Putar roda, siapa yang kebagian giliran.</p>
+    <div id="spinner"></div>
+  </div>
+
+  <!-- Nanti game ke-2, ke-3 taruh di sini -->
+</section>
 
   <footer>
     <img class="footer-avatar" src="data:image/jpeg;base64,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" alt="sapulapojne" width="40" height="40">
